@@ -58,17 +58,8 @@ jobs:
           curl -L https://github.com/golang-migrate/migrate/releases/download/v4.16.2/migrate.linux-amd64.tar.gz | tar xvz
           sudo mv migrate /usr/local/bin/
 
-      - name: List files in repo root
-        run: ls -la
-
       - name: List files in migrations
-        run: ls -la migrations || echo "No migrations dir"
-
-      - name: Show migration file 001
-        run: cat migrations/001_create_books.sql || echo "No 001_create_books.sql"
-
-      - name: Show migration file 002
-        run: cat migrations/002_create_collections.sql || echo "No 002_create_collections.sql"
+        run: ls -la migrations
 
       - name: Wait for services
         run: |
@@ -76,7 +67,7 @@ jobs:
           sleep 10 # ждём Kafka
 
       - name: Run migrations
-        run: migrate -path ${{ github.workspace }}/migrations -database "postgres://testuser:testpass@localhost:5432/testdb?sslmode=disable" up
+        run: migrate -path migrations -database "postgres://testuser:testpass@localhost:5432/testdb?sslmode=disable" up
 
       - name: Build
         run: go build -v ./...
