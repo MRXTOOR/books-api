@@ -1,4 +1,4 @@
-name: Go CI
+name: Docker Compose CI
 
 on:
   push:
@@ -9,60 +9,10 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
-    services:
-      postgres:
-        image: postgres:15
-        env:
-          POSTGRES_USER: testuser
-          POSTGRES_PASSWORD: testpass
-          POSTGRES_DB: testdb
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd="pg_isready -U testuser"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=5
-      kafka:
-        image: bitnami/kafka:3.6
-        env:
-          KAFKA_BROKER_ID: 1
-          KAFKA_CFG_ZOOKEEPER_CONNECT: zookeeper:2181
-          KAFKA_CFG_LISTENERS: PLAINTEXT://:9092
-          KAFKA_CFG_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
-          ALLOW_PLAINTEXT_LISTENER: "yes"
-        ports:
-          - 9092:9092
-        options: >-
-          --health-cmd="bash -c 'echo > /dev/tcp/localhost/9092'"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=10
-      zookeeper:
-        image: bitnami/zookeeper:3.8
-        env:
-          ALLOW_ANONYMOUS_LOGIN: "yes"
-        ports:
-          - 2181:2181
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Go
-        uses: actions/setup-go@v4
-        with:
-          go-version: '1.20'
-
-      - name: Wait for services
+      - name: Build and test with docker-compose
         run: |
-          until pg_isready -h localhost -U testuser; do sleep 2; done
-          sleep 10 # ждём Kafka
-
-      - name: Build
-        run: go build -v ./...
-
-      - name: Run tests
-        env:
-          TEST_DATABASE_DSN: "postgres://testuser:testpass@localhost:5432/testdb?sslmode=disable"
-          KAFKA_BROKER: "localhost:9092"
-        run: go test -v ./...
+          docker-compose -f docker-compose.yml up --build --abort-on-container-exit --exit-code-from app
