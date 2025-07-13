@@ -31,6 +31,11 @@ func TestMigrationsApplied(t *testing.T) {
 	}
 	defer conn.Close(context.Background())
 
+	// Clean up tables before applying migrations
+	conn.Exec(context.Background(), "DROP TABLE IF EXISTS collection_books")
+	conn.Exec(context.Background(), "DROP TABLE IF EXISTS collections")
+	conn.Exec(context.Background(), "DROP TABLE IF EXISTS books")
+
 	execSQLFile(t, conn, "../../migrations/001_create_books.sql")
 	execSQLFile(t, conn, "../../migrations/002_create_collections.sql")
 
