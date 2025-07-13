@@ -1,4 +1,4 @@
-name: Go
+name: Go CI
 
 on:
   push:
@@ -19,9 +19,9 @@ jobs:
         ports:
           - 5432:5432
         options: >-
-          --health-cmd="pg_isready -U testuser" 
-          --health-interval=10s 
-          --health-timeout=5s 
+          --health-cmd="pg_isready -U testuser"
+          --health-interval=10s
+          --health-timeout=5s
           --health-retries=5
       kafka:
         image: bitnami/kafka:3.6
@@ -34,9 +34,9 @@ jobs:
         ports:
           - 9092:9092
         options: >-
-          --health-cmd="bash -c 'echo > /dev/tcp/localhost/9092'" 
-          --health-interval=10s 
-          --health-timeout=5s 
+          --health-cmd="bash -c 'echo > /dev/tcp/localhost/9092'"
+          --health-interval=10s
+          --health-timeout=5s
           --health-retries=10
       zookeeper:
         image: bitnami/zookeeper:3.8
@@ -58,14 +58,19 @@ jobs:
           curl -L https://github.com/golang-migrate/migrate/releases/download/v4.16.2/migrate.linux-amd64.tar.gz | tar xvz
           sudo mv migrate /usr/local/bin/
 
+      - name: List files in repo root
+        run: ls -la
+
+      - name: List files in migrations
+        run: ls -la migrations || echo "No migrations dir"
+
       - name: Wait for services
         run: |
           until pg_isready -h localhost -U testuser; do sleep 2; done
           sleep 10 # ждём Kafka
 
       - name: Run migrations
-        run: |
-          migrate -path migrations -database "postgres://testuser:testpass@localhost:5432/testdb?sslmode=disable" up
+        run: migrate -path migrations -database "postgres://testuser:testpass@localhost:5432/testdb?sslmode=disable" up
 
       - name: Build
         run: go build -v ./...
