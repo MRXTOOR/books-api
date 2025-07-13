@@ -23,7 +23,7 @@ func execSQLFile(t *testing.T, conn *pgx.Conn, path string) {
 func TestMigrationsApplied(t *testing.T) {
 	dsn := os.Getenv("DATABASE_DSN")
 	if dsn == "" {
-		dsn = "postgres://books:books@localhost:5432/books?sslmode=disable"
+		t.Fatal("DATABASE_DSN is not set")
 	}
 	conn, err := pgx.Connect(context.Background(), dsn)
 	if err != nil {
