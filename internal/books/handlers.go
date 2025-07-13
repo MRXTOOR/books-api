@@ -54,7 +54,10 @@ func ListBooks(w http.ResponseWriter, r *http.Request) {
 		}
 		books = append(books, b)
 	}
-	json.NewEncoder(w).Encode(books)
+	if err := json.NewEncoder(w).Encode(books); err != nil {
+		http.Error(w, err.Error(), 500)
+		return
+	}
 }
 
 // @Summary Создать книгу
@@ -71,7 +74,12 @@ func CreateBook(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), 500)
 		return
 	}
-	defer tx.Rollback(ctx)
+	defer func() {
+		err := tx.Rollback(ctx)
+		if err != nil && err != pgx.ErrTxClosed {
+			// Можно логировать ошибку
+		}
+	}()
 	var b Book
 	if err := json.NewDecoder(r.Body).Decode(&b); err != nil {
 		http.Error(w, err.Error(), 400)
@@ -83,14 +91,19 @@ func CreateBook(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if producer != nil {
-		producer.WriteMessages(ctx, kafka.Message{Value: []byte("created book: " + b.Title)})
+		if err := producer.WriteMessages(ctx, kafka.Message{Value: []byte("created book: " + b.Title)}); err != nil {
+			// Можно логировать ошибку
+		}
 	}
 	if err := tx.Commit(ctx); err != nil {
 		http.Error(w, err.Error(), 500)
 		return
 	}
 	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(b)
+	if err := json.NewEncoder(w).Encode(b); err != nil {
+		http.Error(w, err.Error(), 500)
+		return
+	}
 }
 
 // @Summary Получить книгу по id
@@ -108,7 +121,10 @@ func GetBook(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "not found", http.StatusNotFound)
 		return
 	}
-	json.NewEncoder(w).Encode(b)
+	if err := json.NewEncoder(w).Encode(b); err != nil {
+		http.Error(w, err.Error(), 500)
+		return
+	}
 }
 
 // @Summary Обновить книгу
@@ -132,9 +148,14 @@ func UpdateBook(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if producer != nil {
-		producer.WriteMessages(r.Context(), kafka.Message{Value: []byte("updated book: " + id)})
+		if err := producer.WriteMessages(r.Context(), kafka.Message{Value: []byte("updated book: " + id)}); err != nil {
+			// Можно логировать ошибку
+		}
 	}
-	json.NewEncoder(w).Encode(b)
+	if err := json.NewEncoder(w).Encode(b); err != nil {
+		http.Error(w, err.Error(), 500)
+		return
+	}
 }
 
 // @Summary Удалить книгу
@@ -151,7 +172,9 @@ func DeleteBook(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if producer != nil {
-		producer.WriteMessages(r.Context(), kafka.Message{Value: []byte("deleted book: " + id)})
+		if err := producer.WriteMessages(r.Context(), kafka.Message{Value: []byte("deleted book: " + id)}); err != nil {
+			// Можно логировать ошибку
+		}
 	}
 	w.WriteHeader(http.StatusNoContent)
 }

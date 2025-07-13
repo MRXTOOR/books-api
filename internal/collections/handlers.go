@@ -54,10 +54,16 @@ func CreateCollection(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if producer != nil {
-		producer.WriteMessages(r.Context(), kafka.Message{Value: []byte("created collection: " + c.Name)})
+		if err := producer.WriteMessages(r.Context(), kafka.Message{Value: []byte("created collection: " + c.Name)}); err != nil {
+			http.Error(w, err.Error(), 500)
+			return
+		}
+	}
+	if err := json.NewEncoder(w).Encode(c); err != nil {
+		http.Error(w, err.Error(), 500)
+		return
 	}
 	w.WriteHeader(201)
-	json.NewEncoder(w).Encode(c)
 }
 
 // @Summary Получить список подборок
@@ -80,7 +86,10 @@ func ListCollections(w http.ResponseWriter, r *http.Request) {
 		}
 		collections = append(collections, c)
 	}
-	json.NewEncoder(w).Encode(collections)
+	if err := json.NewEncoder(w).Encode(collections); err != nil {
+		http.Error(w, err.Error(), 500)
+		return
+	}
 }
 
 // @Summary Получить подборку по id
@@ -113,7 +122,10 @@ func GetCollection(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}
-	json.NewEncoder(w).Encode(c)
+	if err := json.NewEncoder(w).Encode(c); err != nil {
+		http.Error(w, err.Error(), 500)
+		return
+	}
 }
 
 // @Summary Добавить книгу в подборку
@@ -130,7 +142,11 @@ func AddBookToCollection(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), 500)
 		return
 	}
-	defer tx.Rollback(ctx)
+	defer func() {
+		if err := tx.Rollback(ctx); err != nil && err != pgx.ErrTxClosed {
+			// Можно логировать ошибку
+		}
+	}()
 	id := chi.URLParam(r, "id")
 	var req struct {
 		BookID int `json:"book_id"`
@@ -145,7 +161,9 @@ func AddBookToCollection(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if producer != nil {
-		producer.WriteMessages(ctx, kafka.Message{Value: []byte("added book to collection: " + id)})
+		if err := producer.WriteMessages(ctx, kafka.Message{Value: []byte("added book to collection: " + id)}); err != nil {
+			// Можно логировать ошибку
+		}
 	}
 	if err := tx.Commit(ctx); err != nil {
 		http.Error(w, err.Error(), 500)
@@ -167,7 +185,11 @@ func RemoveBookFromCollection(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), 500)
 		return
 	}
-	defer tx.Rollback(ctx)
+	defer func() {
+		if err := tx.Rollback(ctx); err != nil && err != pgx.ErrTxClosed {
+			// Можно логировать ошибку
+		}
+	}()
 	id := chi.URLParam(r, "id")
 	bookID := chi.URLParam(r, "book_id")
 	row := tx.QueryRow(ctx, "DELETE FROM collection_books WHERE collection_id=$1 AND book_id=$2 RETURNING book_id", id, bookID)
@@ -177,7 +199,9 @@ func RemoveBookFromCollection(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if producer != nil {
-		producer.WriteMessages(ctx, kafka.Message{Value: []byte("removed book from collection: " + id)})
+		if err := producer.WriteMessages(ctx, kafka.Message{Value: []byte("removed book from collection: " + id)}); err != nil {
+			// Можно логировать ошибку
+		}
 	}
 	if err := tx.Commit(ctx); err != nil {
 		http.Error(w, err.Error(), 500)

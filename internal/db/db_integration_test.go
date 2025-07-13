@@ -2,7 +2,6 @@ package db
 
 import (
 	"context"
-	"io/ioutil"
 	"os"
 	"testing"
 
@@ -10,12 +9,11 @@ import (
 )
 
 func execSQLFile(t *testing.T, conn *pgx.Conn, path string) {
-	data, err := ioutil.ReadFile(path)
+	data, err := os.ReadFile(path)
 	if err != nil {
 		t.Fatalf("failed to read migration file %s: %v", path, err)
 	}
-	_, err = conn.Exec(context.Background(), string(data))
-	if err != nil {
+	if _, err := conn.Exec(context.Background(), string(data)); err != nil {
 		t.Fatalf("failed to execute migration %s: %v", path, err)
 	}
 }
@@ -32,9 +30,15 @@ func TestMigrationsApplied(t *testing.T) {
 	defer conn.Close(context.Background())
 
 	// Clean up tables before applying migrations
-	conn.Exec(context.Background(), "DROP TABLE IF EXISTS collection_books")
-	conn.Exec(context.Background(), "DROP TABLE IF EXISTS collections")
-	conn.Exec(context.Background(), "DROP TABLE IF EXISTS books")
+	if _, err := conn.Exec(context.Background(), "DROP TABLE IF EXISTS collection_books"); err != nil {
+		t.Fatalf("failed to drop collection_books: %v", err)
+	}
+	if _, err := conn.Exec(context.Background(), "DROP TABLE IF EXISTS collections"); err != nil {
+		t.Fatalf("failed to drop collections: %v", err)
+	}
+	if _, err := conn.Exec(context.Background(), "DROP TABLE IF EXISTS books"); err != nil {
+		t.Fatalf("failed to drop books: %v", err)
+	}
 
 	execSQLFile(t, conn, "../../migrations/001_create_books.sql")
 	execSQLFile(t, conn, "../../migrations/002_create_collections.sql")
