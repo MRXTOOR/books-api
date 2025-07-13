@@ -53,21 +53,10 @@ jobs:
         with:
           go-version: '1.20'
 
-      - name: Install migrate
-        run: |
-          curl -L https://github.com/golang-migrate/migrate/releases/download/v4.16.2/migrate.linux-amd64.tar.gz | tar xvz
-          sudo mv migrate /usr/local/bin/
-
-      - name: List files in migrations
-        run: ls -la migrations
-
       - name: Wait for services
         run: |
           until pg_isready -h localhost -U testuser; do sleep 2; done
           sleep 10 # ждём Kafka
-
-      - name: Run migrations
-        run: migrate -path migrations -database "postgres://testuser:testpass@localhost:5432/testdb?sslmode=disable" up
 
       - name: Build
         run: go build -v ./...
