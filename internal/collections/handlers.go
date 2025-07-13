@@ -60,11 +60,11 @@ func CreateCollection(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
+	w.WriteHeader(201)
 	if err := json.NewEncoder(w).Encode(c); err != nil {
 		http.Error(w, err.Error(), 500)
 		return
 	}
-	w.WriteHeader(201)
 }
 
 // @Summary Получить список подборок
