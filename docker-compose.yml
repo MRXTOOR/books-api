@@ -1,0 +1,49 @@
+services:
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: books
+      POSTGRES_PASSWORD: books
+      POSTGRES_DB: books
+    ports:
+      - "5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+  zookeeper:
+    image: bitnami/zookeeper:3.8
+    ports:
+      - "2181:2181"
+    environment:
+      ALLOW_ANONYMOUS_LOGIN: "yes"
+    healthcheck:
+      test: ["CMD", "echo", "ruok", "|", "nc", "localhost", "2181"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+  kafka:
+    image: bitnami/kafka:3.5
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENERS: PLAINTEXT://:9092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      ALLOW_PLAINTEXT_LISTENER: "yes"
+    restart: on-failure
+    ports:
+      - "9092:9092"
+    depends_on:
+      - zookeeper
+  test:
+    image: golang:1.24.3-alpine
+    working_dir: /app
+    volumes:
+      - .:/app
+    command: go test -v -tags=integration ./internal/integration_test/...
+    environment:
+      DATABASE_DSN: postgres://books:books@db:5432/books?sslmode=disable
+      KAFKA_BROKERS: kafka:9092
+    depends_on:
+      - db
+      - kafka
+volumes:
+  db_data:
