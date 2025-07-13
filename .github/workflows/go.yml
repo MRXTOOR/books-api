@@ -64,13 +64,19 @@ jobs:
       - name: List files in migrations
         run: ls -la migrations || echo "No migrations dir"
 
+      - name: Show migration file 001
+        run: cat migrations/001_create_books.sql || echo "No 001_create_books.sql"
+
+      - name: Show migration file 002
+        run: cat migrations/002_create_collections.sql || echo "No 002_create_collections.sql"
+
       - name: Wait for services
         run: |
           until pg_isready -h localhost -U testuser; do sleep 2; done
           sleep 10 # ждём Kafka
 
       - name: Run migrations
-        run: migrate -path migrations -database "postgres://testuser:testpass@localhost:5432/testdb?sslmode=disable" up
+        run: migrate -path ${{ github.workspace }}/migrations -database "postgres://testuser:testpass@localhost:5432/testdb?sslmode=disable" up
 
       - name: Build
         run: go build -v ./...
