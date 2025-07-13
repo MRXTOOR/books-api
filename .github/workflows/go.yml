@@ -13,6 +13,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Build and test with docker-compose
+      - name: Build and test with docker compose
         run: |
-          docker-compose -f docker-compose.yml up --build --abort-on-container-exit --exit-code-from app
+          docker compose -f docker-compose.yml up --build --abort-on-container-exit --exit-code-from app
