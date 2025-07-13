@@ -1,0 +1,13 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: smoke-test
+spec:
+  template:
+    spec:
+      containers:
+        - name: curl
+          image: curlimages/curl:8.7.1
+          command: ["sh", "-c", "curl -sf http://books-api/api/v1/books"]
+      restartPolicy: Never
+  backoffLimit: 2
