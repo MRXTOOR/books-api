@@ -23,7 +23,7 @@ func execSQLFile(t *testing.T, conn *pgx.Conn, path string) {
 func TestMigrationsApplied(t *testing.T) {
 	dsn := os.Getenv("DATABASE_DSN")
 	if dsn == "" {
-		t.Fatal("DATABASE_DSN is not set")
+		dsn = "postgres://books:books@localhost:5432/books?sslmode=disable"
 	}
 	conn, err := pgx.Connect(context.Background(), dsn)
 	if err != nil {
@@ -31,8 +31,8 @@ func TestMigrationsApplied(t *testing.T) {
 	}
 	defer conn.Close(context.Background())
 
-	execSQLFile(t, conn, "migrations/001_create_books.sql")
-	execSQLFile(t, conn, "migrations/002_create_collections.sql")
+	execSQLFile(t, conn, "../../migrations/001_create_books.sql")
+	execSQLFile(t, conn, "../../migrations/002_create_collections.sql")
 
 	tables := []string{"books", "collections", "collection_books"}
 	for _, table := range tables {

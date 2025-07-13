@@ -18,7 +18,7 @@ import (
 func main() {
 	dsn := os.Getenv("DATABASE_DSN")
 	if dsn == "" {
-		dsn = "postgres://books:books@localhost:5432/books?sslmode=disable"
+		log.Fatal("DATABASE_DSN is not set")
 	}
 	pool, err := db.NewDB(dsn)
 	if err != nil {
