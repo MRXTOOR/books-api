@@ -3,6 +3,7 @@ package collections
 import (
 	"context"
 	"encoding/json"
+	"log"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
@@ -144,7 +145,7 @@ func AddBookToCollection(w http.ResponseWriter, r *http.Request) {
 	}
 	defer func() {
 		if err := tx.Rollback(ctx); err != nil && err != pgx.ErrTxClosed {
-			// Можно логировать ошибку
+			log.Printf("ошибка Rollback: %v", err)
 		}
 	}()
 	id := chi.URLParam(r, "id")
@@ -162,7 +163,7 @@ func AddBookToCollection(w http.ResponseWriter, r *http.Request) {
 	}
 	if producer != nil {
 		if err := producer.WriteMessages(ctx, kafka.Message{Value: []byte("added book to collection: " + id)}); err != nil {
-			// Можно логировать ошибку
+			log.Printf("ошибка отправки в Kafka: %v", err)
 		}
 	}
 	if err := tx.Commit(ctx); err != nil {
@@ -187,7 +188,7 @@ func RemoveBookFromCollection(w http.ResponseWriter, r *http.Request) {
 	}
 	defer func() {
 		if err := tx.Rollback(ctx); err != nil && err != pgx.ErrTxClosed {
-			// Можно логировать ошибку
+			log.Printf("ошибка Rollback: %v", err)
 		}
 	}()
 	id := chi.URLParam(r, "id")
@@ -200,7 +201,7 @@ func RemoveBookFromCollection(w http.ResponseWriter, r *http.Request) {
 	}
 	if producer != nil {
 		if err := producer.WriteMessages(ctx, kafka.Message{Value: []byte("removed book from collection: " + id)}); err != nil {
-			// Можно логировать ошибку
+			log.Printf("ошибка отправки в Kafka: %v", err)
 		}
 	}
 	if err := tx.Commit(ctx); err != nil {

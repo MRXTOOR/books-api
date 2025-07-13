@@ -3,6 +3,7 @@ package books
 import (
 	"context"
 	"encoding/json"
+	"log"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
@@ -77,7 +78,7 @@ func CreateBook(w http.ResponseWriter, r *http.Request) {
 	defer func() {
 		err := tx.Rollback(ctx)
 		if err != nil && err != pgx.ErrTxClosed {
-			// Можно логировать ошибку
+			log.Printf("ошибка Rollback: %v", err)
 		}
 	}()
 	var b Book
@@ -92,7 +93,7 @@ func CreateBook(w http.ResponseWriter, r *http.Request) {
 	}
 	if producer != nil {
 		if err := producer.WriteMessages(ctx, kafka.Message{Value: []byte("created book: " + b.Title)}); err != nil {
-			// Можно логировать ошибку
+			log.Printf("ошибка отправки в Kafka: %v", err)
 		}
 	}
 	if err := tx.Commit(ctx); err != nil {
@@ -149,7 +150,7 @@ func UpdateBook(w http.ResponseWriter, r *http.Request) {
 	}
 	if producer != nil {
 		if err := producer.WriteMessages(r.Context(), kafka.Message{Value: []byte("updated book: " + id)}); err != nil {
-			// Можно логировать ошибку
+			log.Printf("ошибка отправки в Kafka: %v", err)
 		}
 	}
 	if err := json.NewEncoder(w).Encode(b); err != nil {
@@ -173,7 +174,7 @@ func DeleteBook(w http.ResponseWriter, r *http.Request) {
 	}
 	if producer != nil {
 		if err := producer.WriteMessages(r.Context(), kafka.Message{Value: []byte("deleted book: " + id)}); err != nil {
-			// Можно логировать ошибку
+			log.Printf("ошибка отправки в Kafka: %v", err)
 		}
 	}
 	w.WriteHeader(http.StatusNoContent)
