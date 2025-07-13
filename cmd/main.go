@@ -15,10 +15,6 @@ import (
 	custommw "books-api/internal/middleware"
 )
 
-// @title Books API
-// @version 1.0
-// @description API для магазина книг
-// @BasePath /api/v1
 func main() {
 	dsn := os.Getenv("DATABASE_DSN")
 	if dsn == "" {
@@ -58,8 +54,6 @@ func main() {
 			next.ServeHTTP(w, r)
 		})
 	})
-
-	// Удаляю все роуты, связанные со Swagger
 
 	r.Route("/api/v1", func(r chi.Router) {
 		books.RegisterRoutes(r)
